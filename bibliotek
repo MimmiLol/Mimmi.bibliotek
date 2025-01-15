@@ -1,0 +1,178 @@
+# ------------------------------- Information --------------------------------- #
+"""
+Titel: Biblioteket
+Författare:
+Datum:
+Det här är ett program för hantering av enklare biblioteksrutiner.
+Programmet lagrar böckerna i en fil med namnet "bibliotek.txt" mellan körningarna.
+"""
+# ------------------------- Biblioteksimportering ----------------------------- #
+import os
+
+# ---------------------------- Klassdefinitioner ------------------------------ #
+
+class Bok:
+    """ Bok är en klass som representerar en bok i biblioteket. Varje objekt
+    som skapas ur klassen har en titel, författare och en variabel som håller
+    reda på om boken är utlånad eller inte. """
+    def __init__(self, författare, titel, utlånad=False): #Boolean False=0 använder även self som en attribut till titelt, ger ett eget värde för varje obejkt som tex "författare"
+        self.titel = titel
+        self.författare = författare
+        self.utlånad = utlånad
+
+    # Strängrepresentation av objektet.
+    def __str__(self):
+        return f"Boken {self.titel}, skriven av {self.författare}, {'utlånad' if self.utlånad else 'tillgänglig'}." #Använder just f för att det gör koden mer simpelt att förstå,fungerar som att man adderar allt som står inom parametrarna istället för att man måste skriva allt för sig.
+
+class Bibliotek:
+    """ Bibliotek är en klass som representerar en bibliotekskatalog. Ett objekt
+    ur klassen har en lista över böcker som attribut, samt metoder för att
+    modifiera katalogen. """
+    def __init__(self, books):
+        self.books = books
+
+    # Sparar hela bibliotekskatalogen i en fil.
+    def spara(self, filename): #sparar information. definerar objekt som hör till klassen biblotek som jag använder.filename där informationen sparas.
+        try: #try används för felhantering jobbar tillsammans med except om det inte fungerar som det ska så sker det som except vill.
+            with open(filename, "w", encoding="utf-8") as file: #öppnar filen filename med w gör att det går att skrivas över i filen. utf-8 är att för hantera speciella tecken.
+                for bok in self.books: #listan av böcker
+                    file.write(f"{bok.titel},{bok.författare},{int(bok.utlånad)}\n") # boolean igen.1 utlånad 0 inte. n ny rad information om bok.
+        except IOError as e: #fel i filhanteringen. felmeddelande.
+            print(f"Fel vid sparande av filen: {e}")
+
+    # Laddar böcker från fil.
+    @staticmethod #kan anropas. bunden till en klass (bibloteket)
+    def ladda(filename):
+        books = [] #skriver ut denna tomma lista om det går fel tex om man skriver fel namn eller något.
+        if not os.path.exists(filename): #ser till att filen finns annars tomma listan igen.
+            return books
+        try: #felhantering
+            with open(filename, "r", encoding="utf-8") as file: #with för att stänga filen när avslutat.
+                for line in file:
+                    
+                    titel, författare, utlånad = line.strip().split(",") #line strip tar radbytning blanksteg
+                    books.append(Bok(författare, titel, utlånad == "1")) # delar in kommatecken 3 delar. true. skapa
+        except IOError as e: #fel
+            print(f"Fel vid laddning av filen: {e}") #skriver ut vid fel
+        return books
+
+    # Sorterar böcker alfabetiskt efter titel.
+    def sorteraBöcker(self): #sorterar efet titel stor liten bokstav
+        self.books.sort(key=lambda bok: bok.titel.lower()) #sortera lista, gör så att det inte spelar roll bokstav.versaler. case insenstive
+
+    # Söker på en titel.
+    def hittaTitel(self, titel): #retunerar böcker med titeln
+        resultat = [bok for bok in self.books if titel.lower() in bok.titel.lower()] #skapar en lista. ser också till att det du sökt på finns som titel eller i en titel.
+        return resultat
+
+    # Söker på en författare.
+    def hittaFörfattare(self, författare):
+        resultat = [bok for bok in self.books if författare.lower() in bok.författare.lower()] #söker efter författaren som man skriver in i bibliotekeet och retunerar författarens böcker.
+        return resultat
+
+    # Lånar en bok. letar efter bok det du sökte på matcha
+    def lånaBok(self, titel):
+        for bok in self.books:
+            if bok.titel.lower() == titel.lower():
+                if not bok.utlånad:
+                    bok.utlånad = True #boolean
+                    return f"Du har lånat {bok.titel}." #Gör så om boken inte är utlånad ska det gå att kuna låna det genom boolean.
+                else:
+                    return f"Boken {bok.titel} är redan utlånad." #om boken redan är lånad retuneras detta.
+        return f"Boken med titeln {titel} finns inte i biblioteket." #returnerar om inte finns i biblioteket.
+
+    # Återlämnar en bok.
+    def lämnaTillbaka(self, titel):
+        for bok in self.books:
+            if bok.titel.lower() == titel.lower():  #läser i lower
+                if bok.utlånad:
+                    bok.utlånad = False #boolean ändrar bokens utlånad status till false
+                    return f"Du har lämnat tillbaka {bok.titel}." #boken lämas tillbaka
+                else:
+                    return f"Boken {bok.titel} var inte utlånad." #om man skirver att man vill återlämna en bok som inte finns
+        return f"Boken med titeln {titel} finns inte i biblioteket." #om den inte finns i biblioteket
+
+    # Lägger till en ny bok.
+    def läggTill(self, titel, författare): #skapar ett nytt bok objekt och lägger till boken i listan.
+        self.books.append(Bok(författare, titel))
+        return f"Boken {titel} av {författare} har lagts till."
+
+    # Tar bort en bok.
+    def taBort(self, titel):
+        for bok in self.books:
+            if bok.titel.lower() == titel.lower():
+                self.books.remove(bok) #gör så den kan tas bort.
+                return f"Boken {titel} har tagits bort." # gör så att boken tas bort efter man har skrivit in den
+        return f"Boken med titeln {titel} finns inte i biblioteket." #om den inte ens finns från första början
+
+    # Returnerar en lista över alla böcker.
+    def listaBöcker(self):  
+        return "\n".join(str(bok) for bok in self.books) #radbryt. anropar. retutuenerar alla böcker en per rad
+
+# ------------------------------ Huvudprogram --------------------------------- #
+def main():
+    bibliotek = Bibliotek(Bibliotek.ladda("bibliotek.txt")) #
+    menyVal = "" #lägger till menyval
+
+    while menyVal != "q":
+
+        print(
+        """
+                                          --- MENY ---
+                Välkommen till biblioteks-simulatorn. Välj ett av alternativen nedan:
+            1. Lista alla böcker                                2. Sortera böcker efter titel
+            3. Sök efter titel                                 4. Sök efter författare
+            5. Låna bok                                       6. Återlämna bok
+            7. Lägg till ny bok                               8. Ta bort bok
+            q. Avsluta
+        ---------------------------------------------------------------------------------------
+        """)
+
+        menyVal = input("-> ")  #gör så du kan skriva in det du vill välja menyval
+
+        if menyVal == "1":   #på alla dem under beskriver det vad som händer när du trycker på varje siffra simpelt.
+            print("\nBöcker i biblioteket:") #listar alla böcker
+            print(bibliotek.listaBöcker())#skapar en sträng i klassen bibliotek
+        elif menyVal == "2":
+            bibliotek.sorteraBöcker() #Denna delen av koden gör så att böckerna sorteras i alfabetisk ordning. sorteraböcker() för att sortera listan self.books
+            print("\nBöckerna har sorterats alfabetiskt efter titel!") 
+            print(bibliotek.listaBöcker())  #anropar listaböcker för att visa listan som skapas
+        elif menyVal == "3": #denna gör så du kan söka efter titeln du letar efter
+            titel = input("Ange titeln du vill söka efter: ")
+            resultat = bibliotek.hittaTitel(titel)# hittatitel() används för att hitta boken du letar efter
+            if resultat:
+                print("\nHittade böcker:")# om den finns skirvs detta och sen skrivs boken som du sökte efter under.
+                for bok in resultat:
+                    print(bok)
+            else:
+                print("Inga böcker hittades med den titeln.") #om den inte finns skcikas det medelandet.
+        elif menyVal == "4": #Denna del av koden är för att söka efter författare och då få böckenra som hör till den författaren
+            författare = input("Ange författaren du vill söka efter: ") #gör så du kan skriva in namnet på författaren efter du har valt 4
+            resultat = bibliotek.hittaFörfattare(författare)
+            if resultat:
+                print("\nHittade böcker:") # här skriver den hittade böcker och sen skriver böckerna som finns efter
+                for bok in resultat:
+                    print(bok) #delen av koden som printar böckerna som finns
+            else:
+                print("Inga böcker hittades av den författaren.") #om författaren och dess böcker inte finns så skrivs detta ut.
+        elif menyVal == "5": #Här kan du låna en bok om du trycker på 5 markerar böckerna som lånad eller inte
+            titel = input("Ange titeln på boken du vill låna: ") #Detta gör så att du kan skriva vilken bok du vill låna
+            print(bibliotek.lånaBok(titel)) # Gör så du kan låna boken
+        elif menyVal == "6": #Gör så du kan lämna tillbaka boken om du har lånat en bok
+            titel = input("Ange titeln på boken du vill lämna tillbaka: ") #läser in titeln du skirver och sen ändras så den inte är lånad
+            print(bibliotek.lämnaTillbaka(titel))
+        elif menyVal == "7": #Denna gör så du kan lägga till böcker i biblioteket.
+            titel = input("Ange titeln på den nya boken: ") #Gör så du kan skriva in boken du vill ha i biblioteket
+            författare = input("Ange författarens namn: ") #Sen ska du skriva författarens namn så det blir rätt i biblioteket
+            print(bibliotek.läggTill(titel, författare)) #skriver sen att boken har läggs till.
+        elif menyVal == "8": # Här kan du ta bort böcker som finns i biblioteket.
+            titel = input("Ange titeln på boken du vill ta bort: ") # Denna gör så du kan skirva titeln på boken som du vill ska försvinna från bibliotket
+            print(bibliotek.taBort(titel)) #Returnerar ett meddelande som säger att boken har tagits bort.
+        elif menyVal == "q": #Denhär sista delen av koden helt enkelt avslutar programmet och sparar.
+            print("Sparar biblioteket och avslutar...")
+            bibliotek.spara("bibliotek.txt")
+        else: #om du skriver fel bokstav så svarar den med det som står här under.
+            print("Ogiltigt val. Försök igen.")
+
+if __name__ == "__main__":
+    main() #startar programmet
